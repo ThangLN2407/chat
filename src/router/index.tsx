@@ -10,43 +10,48 @@ const Home = lazy(() => import("../pages/Home"));
 const ChatRoom = lazy(() => import("../pages/ChatRoom"));
 const NotFound = lazy(() => import("../pages/NotFound"));
 
-export const router = createBrowserRouter([
+export const router = createBrowserRouter(
+  [
+    {
+      path: "/",
+      element: (
+        <ProtectedRoute>
+          <App />
+        </ProtectedRoute>
+      ),
+      children: [
+        {
+          path: "",
+          element: <Home />,
+        },
+        {
+          path: "chat/:chatId",
+          element: <ChatRoom />,
+        },
+      ],
+    },
+    {
+      path: "login",
+      element: (
+        <UnProtectedRoute>
+          <Login />
+        </UnProtectedRoute>
+      ),
+    },
+    {
+      path: "register",
+      element: (
+        <UnProtectedRoute>
+          <Register />
+        </UnProtectedRoute>
+      ),
+    },
+    {
+      path: "*",
+      element: <NotFound />,
+    },
+  ],
   {
-    path: "/",
-    element: (
-      <ProtectedRoute>
-        <App />
-      </ProtectedRoute>
-    ),
-    children: [
-      {
-        path: "",
-        element: <Home />,
-      },
-      {
-        path: "chat/:chatId",
-        element: <ChatRoom />,
-      },
-    ],
-  },
-  {
-    path: "login",
-    element: (
-      <UnProtectedRoute>
-        <Login />
-      </UnProtectedRoute>
-    ),
-  },
-  {
-    path: "register",
-    element: (
-      <UnProtectedRoute>
-        <Register />
-      </UnProtectedRoute>
-    ),
-  },
-  {
-    path: "*",
-    element: <NotFound />,
-  },
-]);
+    basename: "/chat",
+  }
+);
