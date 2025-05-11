@@ -5,6 +5,10 @@ import {
   query,
   addDoc,
   serverTimestamp,
+  type DocumentData,
+  limit,
+  startAfter,
+  getDocs,
 } from "firebase/firestore";
 import EmojiPicker, { type EmojiClickData } from "emoji-picker-react";
 import { useEffect, useRef, useState } from "react";
@@ -26,8 +30,11 @@ const ChatRoom = () => {
   const [messages, setMessages] = useState<MessageIdType[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [lastVisible, setLastVisible] = useState<DocumentData | null>(null);
 
   const emojiRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const messagesRef = useRef<HTMLDivElement>(null);
 
   const handleEmojiClick = (emojiData: EmojiClickData) => {
     setNewMessage((prev) => prev + emojiData.emoji);
@@ -54,19 +61,25 @@ const ChatRoom = () => {
 
     const q = query(
       collection(db, "chats", chatId, "messages"),
-      orderBy("createdAt")
+      orderBy("createdAt", "desc"),
+      limit(20)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const msgs: MessageIdType[] = snapshot.docs.map((doc) => ({
+      const msgs: MessageIdType[] = snapshot.docs.reverse().map((doc) => ({
         id: doc.id,
         ...doc.data(),
       })) as MessageIdType[];
       setMessages(msgs);
+      setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
     });
 
     return () => unsubscribe();
   }, [chatId]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const handleSend = async () => {
     if (!newMessage.trim()) return;
@@ -85,6 +98,30 @@ const ChatRoom = () => {
     }
   };
 
+  const handleScroll = async () => {
+    if (!chatId) return;
+    const top = messagesRef.current?.scrollTop;
+    if (top === 0 && lastVisible) {
+      const moreQuery = query(
+        collection(db, "chats", chatId, "messages"),
+        orderBy("createdAt", "desc"),
+        startAfter(lastVisible),
+        limit(20)
+      );
+      const snapshot = await getDocs(moreQuery);
+      const newDocs = snapshot.docs.reverse();
+      setMessages((prev) => [
+        ...(newDocs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as MessageIdType[]),
+        ...prev,
+      ]);
+
+      setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
+    }
+  };
+
   return (
     <div className="h-screen flex flex-col">
       {/* Header */}
@@ -97,7 +134,11 @@ const ChatRoom = () => {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-gray-50">
+      <div
+        className="flex-1 overflow-y-auto p-4 space-y-2 bg-gray-50"
+        ref={messagesRef}
+        onScroll={handleScroll}
+      >
         {messages.map((msg) => (
           <div
             key={msg.id}
@@ -110,10 +151,11 @@ const ChatRoom = () => {
             {msg.text}
           </div>
         ))}
+        <div ref={bottomRef} />
       </div>
 
       {/* Input */}
-      <div className="flex items-center gap-2 mt-4 py-3">
+      <div className="flex items-center gap-2 m-5">
         <Input.TextArea
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
