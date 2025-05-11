@@ -27,25 +27,32 @@ const EditProfileModal = ({ user, open, onClose, onSubmitData }: Props) => {
     handleSubmit,
     control,
     setValue,
+    getValues,
+    reset,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: yupResolver(schema),
     defaultValues: {
-      displayName: user?.displayName ?? "",
+      displayName: "",
       photoURL: user?.photoURL ?? "",
     },
   });
 
-  const onSubmit = (values: FormValues) => {
-    console.log("🎯 Submit giá trị:", values);
-    onSubmitData(values);
+  const handleClose = () => {
+    reset({
+      displayName: "",
+      photoURL: user?.photoURL ?? "",
+    });
+    onClose();
   };
+
+  const onSubmit = (values: FormValues) => onSubmitData(values);
 
   return (
     <Modal
       title="Chỉnh sửa thông tin cá nhân"
       open={open}
-      onCancel={onClose}
+      onCancel={handleClose}
       footer={null}
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -56,7 +63,11 @@ const EditProfileModal = ({ user, open, onClose, onSubmitData }: Props) => {
             name="displayName"
             control={control}
             render={({ field }) => (
-              <Input {...field} placeholder="Nhập tên hiển thị" />
+              <Input
+                {...field}
+                className="mt-5"
+                placeholder="Nhập tên hiển thị"
+              />
             )}
           />
           {errors.displayName && (
@@ -64,13 +75,18 @@ const EditProfileModal = ({ user, open, onClose, onSubmitData }: Props) => {
           )}
         </div>
 
-        {/* Ảnh đại diện */}
         <div>
-          <label className="font-semibold">Ảnh đại diện</label>
+          <img
+            className="w-20 h-20 object-contain border-2 border-gray-300 rounded-full"
+            src={getValues("photoURL") || user?.photoURL || ""}
+            alt="avatar"
+          />
+        </div>
+        <div>
+          <label className="font-semibold mr-5">Ảnh đại diện</label>
           <UploadImage
             userId={user?.uid ?? null}
             onUpload={(url: string) => {
-              console.log("📸 Upload thành công:", url);
               setValue("photoURL", url, { shouldValidate: true });
             }}
           />
@@ -81,7 +97,7 @@ const EditProfileModal = ({ user, open, onClose, onSubmitData }: Props) => {
 
         {/* Nút */}
         <div className="flex justify-end gap-2">
-          <Button onClick={onClose}>Hủy</Button>
+          <Button onClick={handleClose}>Hủy</Button>
           <Button type="primary" htmlType="submit">
             Lưu
           </Button>

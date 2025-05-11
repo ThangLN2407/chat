@@ -8,7 +8,7 @@ import {
 } from "react";
 import { type UserType } from "../types/user";
 import { useAuth } from "./AuthContext";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase";
 
 interface Props {
@@ -33,14 +33,26 @@ export const UserProvider = ({ children }: Props) => {
       }
 
       try {
-        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+        const userRef = doc(db, "users", currentUser.uid);
+        const unsubscribe = onSnapshot(userRef, (docSnap) => {
+          if (docSnap.exists()) {
+            setUser(docSnap.data() as UserType);
+          } else {
+            console.warn("User không tồn tại trong Firestore");
+            setUser(null);
+          }
+        });
 
-        if (userDoc.exists()) {
-          setUser(userDoc.data() as UserType);
-        } else {
-          console.warn("Không tìm thấy user trong Firestore.");
-          setUser(null);
-        }
+        return () => unsubscribe();
+
+        // const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+
+        // if (userDoc.exists()) {
+        //   setUser(userDoc.data() as UserType);
+        // } else {
+        //   console.warn("Không tìm thấy user trong Firestore.");
+        //   setUser(null);
+        // }
       } catch (err) {
         console.error("Lỗi khi lấy user từ Firestore:", err);
         setUser(null);

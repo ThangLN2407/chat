@@ -81,7 +81,7 @@ const Home = () => {
   }, [user?.uid]);
 
   useEffect(() => {
-    if (!user?.friends.length) return;
+    if (!user?.friends?.length) return;
 
     try {
       const q = query(

@@ -1,9 +1,9 @@
 import { UploadOutlined } from "@ant-design/icons";
-import { Button, message, Upload } from "antd";
+import { Button, message, Spin, Upload } from "antd";
 import { type UploadChangeParam } from "antd/es/upload";
 import { type RcFile } from "antd/es/upload/interface";
-import { storage } from "../firebase";
-import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import { uploadImageToCloudinary } from "../cloudinary";
+import { useState } from "react";
 
 type Props = {
   userId: string | null;
@@ -11,6 +11,8 @@ type Props = {
 };
 
 const UploadImage = ({ userId, onUpload }: Props) => {
+  const [loading, setLoading] = useState(false);
+
   const beforeUpload = (file: RcFile) => {
     const isImage = file.type.startsWith("image/");
     if (!isImage) {
@@ -21,16 +23,15 @@ const UploadImage = ({ userId, onUpload }: Props) => {
 
   const handleUpload = async (info: UploadChangeParam) => {
     const file = info.file.originFileObj as RcFile;
+
     if (!file || !userId) return;
 
-    const filePath = `avatars/${userId}/${userId}`;
-    const imageRef = ref(storage, filePath);
-
     try {
-      const snapshot = await uploadBytes(imageRef, file);
-      const downloadURL = await getDownloadURL(snapshot.ref);
-      onUpload(downloadURL);
+      setLoading(true);
+      const result = await uploadImageToCloudinary(file);
+      onUpload(result);
       message.success("Tải ảnh lên thành công!");
+      setLoading(false);
     } catch (error) {
       console.error("Upload thất bại", error);
       message.error("Tải ảnh thất bại!");
@@ -38,14 +39,20 @@ const UploadImage = ({ userId, onUpload }: Props) => {
   };
 
   return (
-    <Upload
-      showUploadList={false}
-      beforeUpload={beforeUpload}
-      customRequest={() => {}} // tránh upload tự động
-      onChange={handleUpload}
-    >
-      <Button icon={<UploadOutlined />}>Chọn ảnh</Button>
-    </Upload>
+    <>
+      {loading ? (
+        <Spin></Spin>
+      ) : (
+        <Upload
+          showUploadList={false}
+          beforeUpload={beforeUpload}
+          customRequest={() => {}} // tránh upload tự động
+          onChange={handleUpload}
+        >
+          <Button icon={<UploadOutlined />}>Chọn ảnh</Button>
+        </Upload>
+      )}
+    </>
   );
 };
 

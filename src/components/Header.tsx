@@ -25,18 +25,14 @@ const Header = ({ user, friendRequests }: Props) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const onSubmit = async (data: FormData) => {
-    console.log("Submit form data:", data);
-
     if (!user?.uid) return;
 
     try {
-      // Cập nhật Firestore
       await updateDoc(doc(db, "users", user.uid), {
         displayName: data.displayName,
         photoURL: data.photoURL,
       });
 
-      // Cập nhật auth profile (không bắt buộc, nhưng tốt)
       await updateProfile(auth.currentUser!, {
         displayName: data.displayName,
         photoURL: data.photoURL,
