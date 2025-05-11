@@ -161,6 +161,12 @@ const ChatRoom = () => {
           onChange={(e) => setNewMessage(e.target.value)}
           placeholder="Nhập tin nhắn..."
           autoSize={{ minRows: 1, maxRows: 3 }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey && !e.altKey) {
+              e.preventDefault();
+              handleSend();
+            }
+          }}
         />
         {/* Nút chọn emoji */}
         <div className="relative">

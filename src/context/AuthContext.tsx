@@ -29,6 +29,8 @@ export const AuthProvider = ({ children }: Props) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!auth) return;
+
     const unListener = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
       setLoading(false);
