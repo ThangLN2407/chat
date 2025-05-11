@@ -1,1 +1,0 @@
-import{j as e}from"./index-pY9xxHMc.js";import{A as r}from"./AuthForm-RD93ysMq.js";import"./index-x68NH7Tf.js";import"./index-DuN0__Lv.js";const m=()=>e.jsx("div",{className:"flex items-center justify-center h-screen bg-gray-100",children:e.jsx(r,{isLogin:!1})});export{m as default};
