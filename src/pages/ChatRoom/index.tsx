@@ -13,12 +13,13 @@ import {
 import EmojiPicker, { type EmojiClickData } from "emoji-picker-react";
 import { useEffect, useRef, useState } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
-import { db } from "../firebase";
-import { useUser } from "../context/UserContext";
+import { db } from "../../firebase";
+import { useUser } from "../../context/UserContext";
 import { Input, Button, message as antdMessage } from "antd";
-import Avatar from "../components/Avatar";
-import { type MessageIdType } from "../types/chat";
+import Avatar from "../../components/Avatar";
+import { type MessageIdType } from "../../types/chat";
 import { SmileOutlined } from "@ant-design/icons";
+import styles from "./style.module.scss";
 
 const ChatRoom = () => {
   const navigate = useNavigate();
@@ -31,6 +32,8 @@ const ChatRoom = () => {
   const [newMessage, setNewMessage] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [lastVisible, setLastVisible] = useState<DocumentData | null>(null);
+  // const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+  const [isAddMessage, setIsAddMessage] = useState(false);
 
   const emojiRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -78,25 +81,36 @@ const ChatRoom = () => {
   }, [chatId]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    const timeout = setTimeout(() => {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
+
+    return () => clearTimeout(timeout);
+  }, []);
 
   const handleSend = async () => {
     if (!newMessage.trim()) return;
+    setNewMessage("");
     setShowEmojiPicker(false);
 
     try {
+      setIsAddMessage(true);
       await addDoc(collection(db, "chats", chatId!, "messages"), {
         senderId: user?.uid,
         text: newMessage,
         createdAt: serverTimestamp(),
       });
-      setNewMessage("");
     } catch (err) {
       antdMessage.error("Không thể gửi tin nhắn");
       console.error(err);
+    } finally {
+      setIsAddMessage(false);
     }
   };
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [isAddMessage]);
 
   const handleScroll = async () => {
     if (!chatId) return;
@@ -135,6 +149,7 @@ const ChatRoom = () => {
 
       {/* Messages */}
       <div
+        id="messages"
         className="flex-1 overflow-y-auto p-4 space-y-2 bg-gray-50"
         ref={messagesRef}
         onScroll={handleScroll}
@@ -142,10 +157,8 @@ const ChatRoom = () => {
         {messages.map((msg) => (
           <div
             key={msg.id}
-            className={`max-w-[60%] w-[fit-content] p-2 rounded-lg ${
-              msg.senderId === user?.uid
-                ? "bg-blue-500 text-white ml-auto"
-                : "bg-gray-200 text-black"
+            className={`${styles.box_message} ${
+              msg.senderId === user?.uid ? styles.user : styles.friend
             }`}
           >
             {msg.text}
@@ -176,7 +189,7 @@ const ChatRoom = () => {
           />
           {showEmojiPicker && (
             <div className="absolute bottom-12 right-0 z-10" ref={emojiRef}>
-              <EmojiPicker onEmojiClick={handleEmojiClick} height={300} />
+              <EmojiPicker onEmojiClick={handleEmojiClick} height={500} />
             </div>
           )}
         </div>
@@ -184,6 +197,20 @@ const ChatRoom = () => {
           Gửi
         </Button>
       </div>
+
+      {/* {showScrollToBottom && (
+        <Button
+          onClick={() =>
+            messagesRef.current?.scrollTo({
+              top: messagesRef.current.scrollHeight,
+              behavior: "smooth",
+            })
+          }
+          className="fixed bottom-28 right-5 z-50"
+          shape="circle"
+          icon={<ArrowDownOutlined />}
+        />
+      )} */}
     </div>
   );
 };
