@@ -32,8 +32,7 @@ const ChatRoom = () => {
   const [newMessage, setNewMessage] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [lastVisible, setLastVisible] = useState<DocumentData | null>(null);
-  // const [showScrollToBottom, setShowScrollToBottom] = useState(false);
-  const [isAddMessage, setIsAddMessage] = useState(false);
+  const [enableScroll, setEnableScroll] = useState(true);
 
   const emojiRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -81,12 +80,8 @@ const ChatRoom = () => {
   }, [chatId]);
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 100);
-
-    return () => clearTimeout(timeout);
-  }, []);
+    if (enableScroll) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, enableScroll]);
 
   const handleSend = async () => {
     if (!newMessage.trim()) return;
@@ -94,7 +89,7 @@ const ChatRoom = () => {
     setShowEmojiPicker(false);
 
     try {
-      setIsAddMessage(true);
+      setEnableScroll(true);
       await addDoc(collection(db, "chats", chatId!, "messages"), {
         senderId: user?.uid,
         text: newMessage,
@@ -103,17 +98,16 @@ const ChatRoom = () => {
     } catch (err) {
       antdMessage.error("Không thể gửi tin nhắn");
       console.error(err);
-    } finally {
-      setIsAddMessage(false);
     }
   };
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [isAddMessage]);
+  }, [enableScroll]);
 
   const handleScroll = async () => {
     if (!chatId) return;
+    setEnableScroll(false);
     const top = messagesRef.current?.scrollTop;
     if (top === 0 && lastVisible) {
       const moreQuery = query(
@@ -164,7 +158,7 @@ const ChatRoom = () => {
             {msg.text}
           </div>
         ))}
-        <div ref={bottomRef} />
+        <div className={styles.box_scroll} ref={bottomRef} />
       </div>
 
       {/* Input */}
