@@ -109,6 +109,7 @@ const ChatRoom = () => {
     if (!chatId) return;
     setEnableScroll(false);
     const top = messagesRef.current?.scrollTop;
+
     if (top === 0 && lastVisible) {
       const moreQuery = query(
         collection(db, "chats", chatId, "messages"),
@@ -127,6 +128,10 @@ const ChatRoom = () => {
       ]);
 
       setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
+      messagesRef.current?.scrollTo({
+        top: 100,
+        behavior: "smooth",
+      });
     }
   };
 
